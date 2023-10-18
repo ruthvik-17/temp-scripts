@@ -1,5 +1,5 @@
 (function() {
-  // Function to track data and save it to localStorage
+  // Function to track data and save it to cookies
   function trackAndSaveData() {
     // Get the current date and time
     var currentDate = new Date();
@@ -9,7 +9,7 @@
     var dayOfWeek = currentDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
     var dayOfMonth = currentDate.getDate();
     var hourOfDay = currentDate.getHours();
-    var timezoneOffset = currentDate.getTimezoneOffset() / 60; // Timezone offset in hours
+    var timezoneOffset = -currentDate.getTimezoneOffset() / 60; // Timezone offset in hours
 
     // Get referrer information
     var referrer = document.referrer;
@@ -37,8 +37,8 @@
       deviceType = "tablet";
     }
 
-    // Create or load the tracked data object from localStorage
-    var trackedData = JSON.parse(localStorage.getItem("trackedData")) || {};
+    // Create or load the tracked data object from cookies
+    var trackedData = JSON.parse(getCookie("trackedData")) || {};
 
     // Check if this is a new session based on whether the page was just loaded
     var isNewSession = !trackedData.hasOwnProperty("last_page_load_time");
@@ -46,6 +46,7 @@
     // Initialize session-related data if it's a new session or tab is reopened
     if (isNewSession || isSessionRestarted()) {
       trackedData.session_num_byuser = (trackedData.session_num_byuser || 0) + 1;
+      trackedData.interaction_num_by_user = 0; // Initialize the interaction count
       trackedData.interaction_num_bysession = 0;
       trackedData.total_seconds_onsite_this_session = 0;
     }
@@ -87,8 +88,8 @@
     // Update the last page load time for session tracking
     trackedData.last_page_load_time = currentTime;
 
-    // Save the updated tracked data to localStorage
-    localStorage.setItem("trackedData", JSON.stringify(trackedData));
+    // Save the updated tracked data to cookies
+    setCookie("trackedData", JSON.stringify(trackedData), 365); // Store data for 365 days
 
     // Here, you can send the 'trackedData' object to your server for storage or analysis.
     // You would typically make an AJAX request or use an appropriate method to send this data.
@@ -99,15 +100,15 @@
 
   // Function to check if the tab is reopened
   function isSessionRestarted() {
-    var lastSessionStart = localStorage.getItem("lastSessionStart");
+    var lastSessionStart = parseInt(getCookie("lastSessionStart"), 10);
     var currentTime = new Date().getTime();
     var sessionTimeout = 30 * 60 * 1000; // 30 minutes
 
     if (lastSessionStart && currentTime - lastSessionStart > sessionTimeout) {
-      localStorage.setItem("lastSessionStart", currentTime);
+      setCookie("lastSessionStart", currentTime, 365); // Store the start time for 365 days
       return true;
     } else if (!lastSessionStart) {
-      localStorage.setItem("lastSessionStart", currentTime);
+      setCookie("lastSessionStart", currentTime, 365);
     }
 
     return false;
@@ -115,4 +116,27 @@
 
   // Track data and save it every 10 seconds (10000 milliseconds)
   setInterval(trackAndSaveData, 10000);
+
+  // Function to set a cookie
+  function setCookie(name, value, days) {
+    var expires = "";
+    if (days) {
+      var date = new Date();
+      date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+      expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + value + expires + "; path=/";
+  }
+
+  // Function to get a cookie by name
+  function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(";");
+    for (var i = 0; i < ca.length; i++) {
+      var c = ca[i];
+      while (c.charAt(0) === " ") c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+  }
 })();
