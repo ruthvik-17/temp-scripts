@@ -55,9 +55,11 @@
     var lastEventTime = trackedData.last_event_time || currentTime;
     var secondsSinceLastEvent = (currentTime - lastEventTime) / 1000;
 
-    // Increment interaction counts
-    trackedData.interaction_num_by_user += 1;
-    trackedData.interaction_num_bysession += 1;
+    // Detect user interactions (clicks) and update interaction counts
+    document.addEventListener("click", function() {
+      trackedData.interaction_num_by_user = (trackedData.interaction_num_by_user || 0) + 1;
+      trackedData.interaction_num_bysession = (trackedData.interaction_num_bysession || 0) + 1;
+    });
 
     // Update the other tracked data points
     trackedData.month = month;
