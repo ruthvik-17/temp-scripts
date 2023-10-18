@@ -74,7 +74,7 @@
     trackedData.device_type_tablet = deviceType === "tablet" ? 1 : 0;
     trackedData.device_type_desktop = deviceType === "desktop" ? 1 : 0;
     trackedData.seconds_since_last_event = secondsSinceLastEvent;
-
+ 
     // Update the total time spent data
     trackedData.total_seconds_onsite_by_user += secondsSinceLastEvent;
     trackedData.total_seconds_onsite_this_session += secondsSinceLastEvent;
