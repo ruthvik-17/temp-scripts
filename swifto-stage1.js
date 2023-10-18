@@ -43,8 +43,8 @@
     // Check if this is a new session based on whether the page was just loaded
     var isNewSession = !trackedData.hasOwnProperty("last_page_load_time");
 
-    // Initialize session-related data if it's a new session
-    if (isNewSession) {
+    // Initialize session-related data if it's a new session or tab is reopened
+    if (isNewSession || isSessionRestarted()) {
       trackedData.session_num_byuser = (trackedData.session_num_byuser || 0) + 1;
       trackedData.interaction_num_bysession = 0;
       trackedData.total_seconds_onsite_this_session = 0;
@@ -95,6 +95,22 @@
 
     // For demonstration purposes, log the tracked data to the console.
     console.log("Tracked Data:", trackedData);
+  }
+
+  // Function to check if the tab is reopened
+  function isSessionRestarted() {
+    var lastSessionStart = localStorage.getItem("lastSessionStart");
+    var currentTime = new Date().getTime();
+    var sessionTimeout = 30 * 60 * 1000; // 30 minutes
+
+    if (lastSessionStart && currentTime - lastSessionStart > sessionTimeout) {
+      localStorage.setItem("lastSessionStart", currentTime);
+      return true;
+    } else if (!lastSessionStart) {
+      localStorage.setItem("lastSessionStart", currentTime);
+    }
+
+    return false;
   }
 
   // Track data and save it every 10 seconds (10000 milliseconds)
