@@ -1,19 +1,20 @@
 (function() {
+  // Function to track data and save it to localStorage
+  function trackAndSaveData() {
     // Get the current date and time
     var currentDate = new Date();
-  
+
     // Extract individual data points related to date and time
     var month = currentDate.getMonth() + 1; // Adding 1 to get 1-12 instead of 0-11
     var dayOfWeek = currentDate.getDay(); // 0 for Sunday, 1 for Monday, etc.
     var dayOfMonth = currentDate.getDate();
     var hourOfDay = currentDate.getHours();
     var timezoneOffset = currentDate.getTimezoneOffset() / 60; // Timezone offset in hours
-  
-    // Get the referrer information from the document
+
+    // Get referrer information
     var referrer = document.referrer;
     var referrerType = "direct"; // Default to "direct" if no referrer
-  
-    // Determine the referrer type based on the referrer information
+
     if (referrer) {
       if (referrer.includes("facebook.com") || referrer.includes("twitter.com")) {
         referrerType = "social";
@@ -25,38 +26,75 @@
         referrerType = "email";
       }
     }
-  
+
     // Determine the device type based on the user agent
     var deviceType = "desktop"; // Default to "desktop" if not identified
     var userAgent = navigator.userAgent.toLowerCase();
-  
+
     if (userAgent.match(/mobile/i)) {
       deviceType = "mobile";
     } else if (userAgent.match(/tablet/i)) {
       deviceType = "tablet";
     }
-  
-    // Create an object to hold the tracked data
-    var trackedData = {
-      "month": month,
-      "day_of_week": dayOfWeek,
-      "day_of_month": dayOfMonth,
-      "hour_of_day": hourOfDay,
-      "timezone_offset": timezoneOffset,
-      "referrer_type_social": referrerType === "social" ? 1 : 0,
-      "referrer_type_seo": referrerType === "seo" ? 1 : 0,
-      "referrer_type_direct": referrerType === "direct" ? 1 : 0,
-      "referrer_type_gads": referrerType === "gads" ? 1 : 0,
-      "referrer_type_email": referrerType === "email" ? 1 : 0,
-      "device_type_mobile": deviceType === "mobile" ? 1 : 0,
-      "device_type_tablet": deviceType === "tablet" ? 1 : 0,
-      "device_type_desktop": deviceType === "desktop" ? 1 : 0
-    };
-  
+
+    // Create or load the tracked data object from localStorage
+    var trackedData = JSON.parse(localStorage.getItem("trackedData")) || {};
+
+    // Check if this is a new session based on whether the page was just loaded
+    var isNewSession = !trackedData.hasOwnProperty("last_page_load_time");
+
+    // Initialize session-related data if it's a new session
+    if (isNewSession) {
+      trackedData.session_num_byuser = (trackedData.session_num_byuser || 0) + 1;
+      trackedData.interaction_num_bysession = 0;
+      trackedData.total_seconds_onsite_this_session = 0;
+    }
+
+    // Calculate the time since the last event (in seconds)
+    var currentTime = currentDate.getTime();
+    var lastEventTime = trackedData.last_event_time || currentTime;
+    var secondsSinceLastEvent = (currentTime - lastEventTime) / 1000;
+
+    // Increment interaction counts
+    trackedData.interaction_num_by_user += 1;
+    trackedData.interaction_num_bysession += 1;
+
+    // Update the other tracked data points
+    trackedData.month = month;
+    trackedData.day_of_week = dayOfWeek;
+    trackedData.day_of_month = dayOfMonth;
+    trackedData.hour_of_day = hourOfDay;
+    trackedData.timezone_offset = timezoneOffset;
+    trackedData.referrer_type_social = referrerType === "social" ? 1 : 0;
+    trackedData.referrer_type_seo = referrerType === "seo" ? 1 : 0;
+    trackedData.referrer_type_direct = referrerType === "direct" ? 1 : 0;
+    trackedData.referrer_type_gads = referrerType === "gads" ? 1 : 0;
+    trackedData.referrer_type_email = referrerType === "email" ? 1 : 0;
+    trackedData.device_type_mobile = deviceType === "mobile" ? 1 : 0;
+    trackedData.device_type_tablet = deviceType === "tablet" ? 1 : 0;
+    trackedData.device_type_desktop = deviceType === "desktop" ? 1 : 0;
+    trackedData.seconds_since_last_event = secondsSinceLastEvent;
+
+    // Update the total time spent data
+    trackedData.total_seconds_onsite_by_user += secondsSinceLastEvent;
+    trackedData.total_seconds_onsite_this_session += secondsSinceLastEvent;
+
+    // Update the last event time
+    trackedData.last_event_time = currentTime;
+
+    // Update the last page load time for session tracking
+    trackedData.last_page_load_time = currentTime;
+
+    // Save the updated tracked data to localStorage
+    localStorage.setItem("trackedData", JSON.stringify(trackedData));
+
     // Here, you can send the 'trackedData' object to your server for storage or analysis.
     // You would typically make an AJAX request or use an appropriate method to send this data.
-  
+
     // For demonstration purposes, log the tracked data to the console.
-    console.log("Swfto Tracked Data:", trackedData);
-  })();
-  
+    console.log("Tracked Data:", trackedData);
+  }
+
+  // Track data and save it every 10 seconds (10000 milliseconds)
+  setInterval(trackAndSaveData, 10000);
+})();
